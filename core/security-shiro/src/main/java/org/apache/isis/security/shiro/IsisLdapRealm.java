@@ -145,6 +145,15 @@ public class IsisLdapRealm extends JndiLdapRealm {
     }
 
     private String searchBase;
+
+    private static final ThreadLocal<LdapContext> threadLdapContext = new ThreadLocal<LdapContext>() {
+            @Override
+            protected void finalize() throws Throwable {
+                LdapUtils.closeContext(get());
+            }
+        };
+
+
     private String groupObjectClass;
     private String uniqueMemberAttribute = "uniqueMember";
     private String uniqueMemberAttributeValuePrefix;
@@ -213,12 +222,23 @@ public class IsisLdapRealm extends JndiLdapRealm {
         SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo(roleNames);
         Set<String> stringPermissions = permsFor(roleNames);
         final String username = (String) getAvailablePrincipal(principals);
-        final LdapContext finalLdapContext = ldapContextFactory.getSystemLdapContext();
+        final LdapContext finalLdapContext = getThreadLocalSystemLdapContext(ldapContextFactory);
         stringPermissions.addAll(getPermissionForUser(username, finalLdapContext));
         stringPermissions.addAll(getPermissionForRole(username, finalLdapContext));
+
         simpleAuthorizationInfo.setStringPermissions(stringPermissions);
 
         return simpleAuthorizationInfo;
+    }
+
+    private LdapContext getThreadLocalSystemLdapContext(final LdapContextFactory ldapContextFactory)
+        throws NamingException {
+        LdapContext ldapContext = threadLdapContext.get();
+        if (ldapContext == null) {
+            ldapContext = ldapContextFactory.getSystemLdapContext();
+            threadLdapContext.set(ldapContext);
+        }
+        return ldapContext;
     }
 
     private Set<String>
@@ -310,15 +330,12 @@ public class IsisLdapRealm extends JndiLdapRealm {
     private Set<String> getRoles(final PrincipalCollection principals, final LdapContextFactory ldapContextFactory) throws NamingException {
         final String username = (String) getAvailablePrincipal(principals);
 
-        LdapContext systemLdapCtx = null;
         try {
-            systemLdapCtx = ldapContextFactory.getSystemLdapContext();
+            LdapContext systemLdapCtx = getThreadLocalSystemLdapContext(ldapContextFactory);
             return rolesFor(username, systemLdapCtx);
         } catch (AuthenticationException ex) {
             // principal was not authenticated on LDAP
             return Collections.emptySet();
-        } finally {
-            LdapUtils.closeContext(systemLdapCtx);
         }
     }
 
