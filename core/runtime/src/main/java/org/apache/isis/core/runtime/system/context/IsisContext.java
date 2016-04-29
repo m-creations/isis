@@ -252,6 +252,10 @@ public class IsisContext implements DebuggableWithTitle {
      * threads have finished with a session can it really be closed.
      */
     public void closeSessionInstance() {
+        if(DeploymentType.UNIT_TESTING == getSessionFactory().getDeploymentType()) {
+            LOG.debug("We are unit testing. I will NOT close this session.");
+            return;
+        }
         final IsisSession isisSession = getSessionInstance();
         if (isisSession != null) {
             isisSession.close();
