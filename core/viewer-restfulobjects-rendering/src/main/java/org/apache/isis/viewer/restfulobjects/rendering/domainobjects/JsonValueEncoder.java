@@ -23,6 +23,8 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -104,7 +106,27 @@ public final class JsonValueEncoder {
     }
 
     static {
-        putConverter(new JsonValueConverter(null, "string", String.class){
+        putConverter(new JsonValueConverter(null, "json", JsonNode.class) {
+            @Override
+            public ObjectAdapter asAdapter(JsonRepresentation repr, String format) {
+                return adapterFor(repr.asJsonNode());
+            }
+
+            @Override
+            public Object appendValueAndFormat(ObjectAdapter objectAdapter, String format, JsonRepresentation repr, boolean suppressExtensions) {
+                final Object obj = unwrapAsObjectElseNullNode(objectAdapter);
+                if (obj instanceof String) {
+                    final String str = (String) obj;
+                    repr.mapPut("value", str);
+                } else {
+                    repr.mapPut("value", obj);
+                }
+                appendFormats(repr, this.format, xIsisFormat, suppressExtensions);
+                return obj;
+            }
+        });
+
+        putConverter(new JsonValueConverter(null, "string", String.class) {
             @Override
             public ObjectAdapter asAdapter(JsonRepresentation repr, String format) {
                 if (repr.isString()) {
@@ -779,8 +801,12 @@ public final class JsonValueEncoder {
 
     public static Object appendValueAndFormat(ObjectSpecification objectSpec, ObjectAdapter objectAdapter, JsonRepresentation repr, String format, boolean suppressExtensions) {
 
-        final JsonValueConverter jvc = converterBySpec.get(objectSpec.getSpecId());
-        if(jvc != null) {
+        ObjectSpecId objectSpecId = objectSpec.getSpecId();
+        if(JsonNode.class.isAssignableFrom(objectSpec.getCorrespondingClass())) {
+            objectSpecId = new ObjectSpecId(JsonNode.class.getName());
+        }
+        final JsonValueConverter jvc = converterBySpec.get(objectSpecId);
+        if (jvc != null) {
             return jvc.appendValueAndFormat(objectAdapter, format, repr, suppressExtensions);
         } else {
             final EncodableFacet encodableFacet = objectSpec.getFacet(EncodableFacet.class);

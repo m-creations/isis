@@ -91,7 +91,7 @@ public class ContentNegotiationServiceForRestfulObjectsV1_0 implements ContentNe
     /**
      * Not API
      */
-    ResponseBuilder buildResponseTo(
+    protected ResponseBuilder buildResponseTo(
             final RepresentationService.Context2 rendererContext,
             final ObjectAdapter objectAdapter,
             final JsonRepresentation representationIfAnyRequired,
@@ -158,7 +158,7 @@ public class ContentNegotiationServiceForRestfulObjectsV1_0 implements ContentNe
     /**
      * Not API
      */
-    ResponseBuilder buildResponseTo(
+    protected ResponseBuilder buildResponseTo(
             final RepresentationService.Context2 rendererContext,
             final ObjectAndCollection objectAndCollection,
             final JsonRepresentation representation,
@@ -212,7 +212,7 @@ public class ContentNegotiationServiceForRestfulObjectsV1_0 implements ContentNe
     /**
      * Not API
      */
-    ResponseBuilder buildResponseTo(
+    protected ResponseBuilder buildResponseTo(
             final RepresentationService.Context2 rendererContext,
             final ObjectAndActionInvocation objectAndActionInvocation,
             final JsonRepresentation representation,
