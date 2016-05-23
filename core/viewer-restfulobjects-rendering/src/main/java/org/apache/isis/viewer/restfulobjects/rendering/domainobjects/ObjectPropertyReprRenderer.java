@@ -19,6 +19,7 @@ package org.apache.isis.viewer.restfulobjects.rendering.domainobjects;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.google.common.collect.Lists;
 
@@ -81,14 +82,14 @@ public class ObjectPropertyReprRenderer extends AbstractObjectMemberReprRenderer
     // value
     // ///////////////////////////////////////////////////
 
-    private Object addValue(final LinkFollowSpecs linkFollower) {
+    protected Object addValue(final LinkFollowSpecs linkFollower) {
         final ObjectAdapter valueAdapter = objectMember.get(objectAdapter, getInteractionInitiatedBy());
         
         // use the runtime type if we have a value, else the compile time type of the member otherwise
         final ObjectSpecification spec = valueAdapter != null? valueAdapter.getSpecification(): objectMember.getSpecification();
         
         final ValueFacet valueFacet = spec.getFacet(ValueFacet.class);
-        if (valueFacet != null) {
+        if (valueFacet != null || JsonNode.class.isAssignableFrom(spec.getCorrespondingClass())) {
             String format = null;
             final Class<?> specClass = spec.getCorrespondingClass();
             if(specClass == java.math.BigDecimal.class) {
@@ -197,7 +198,7 @@ public class ObjectPropertyReprRenderer extends AbstractObjectMemberReprRenderer
     // choices
     // ///////////////////////////////////////////////////
 
-    private ObjectPropertyReprRenderer addChoices() {
+    protected ObjectPropertyReprRenderer addChoices() {
         final Object propertyChoices = propertyChoices();
         if (propertyChoices != null) {
             representation.mapPut("choices", propertyChoices);

@@ -29,6 +29,8 @@ import org.apache.isis.viewer.restfulobjects.rendering.domainobjects.JsonValueEn
 import org.apache.isis.viewer.restfulobjects.rendering.util.Util;
 import org.apache.isis.viewer.restfulobjects.server.util.OidUtils;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * Utility class that encapsulates the logic for parsing some content (JSON, or a simple string that is JSON)
  * into an{@link org.apache.isis.core.metamodel.adapter.ObjectAdapter} of a specified
@@ -96,7 +98,7 @@ public class JsonParserHelper {
         final JsonRepresentation argValueRepr = argRepr.getRepresentation("value");
 
         // value (encodable)
-        if (objectSpec.isEncodeable()) {
+        if (objectSpec.isEncodeable() || objectSpec.getCorrespondingClass().isAssignableFrom(JsonNode.class)) {
             try {
                 return JsonValueEncoder.asAdapter(objectSpec, argValueRepr, null);
             }catch(IllegalArgumentException ex) {

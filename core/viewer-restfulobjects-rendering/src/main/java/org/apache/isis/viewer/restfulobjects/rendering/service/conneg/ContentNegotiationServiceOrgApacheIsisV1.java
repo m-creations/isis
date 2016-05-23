@@ -346,16 +346,20 @@ public class ContentNegotiationServiceOrgApacheIsisV1 extends ContentNegotiation
 
             final JsonRepresentation propertyValueRepresentation = renderer.render();
 
-            final String upHref = propertyValueRepresentation.getString("links[rel=up].href");
-            rootRepresentation.mapPut("$$href", upHref);
-            final String upTitle = propertyValueRepresentation.getString("links[rel=up].title");
-            rootRepresentation.mapPut("$$title", upTitle);
-            final String upInstanceId = upHref.substring(upHref.lastIndexOf("/")+1);
-            rootRepresentation.mapPut("$$instanceId", upInstanceId);
+            postProcessPropertyRepresentation(property, propertyValueRepresentation, rootRepresentation);
 
             final JsonRepresentation value = propertyValueRepresentation.getRepresentation("value");
             rootRepresentation.mapPut(property.getId(), value);
         }
+    }
+
+    protected void postProcessPropertyRepresentation(OneToOneAssociation property, JsonRepresentation propertyValueRepresentation, JsonRepresentation rootRepresentation) {
+        String upHref = propertyValueRepresentation.getString("links[rel=up].href");
+        rootRepresentation.mapPut("$$href", upHref);
+        String upTitle = propertyValueRepresentation.getString("links[rel=up].title");
+        rootRepresentation.mapPut("$$title", upTitle);
+        String upInstanceId = upHref.substring(upHref.lastIndexOf("/")+1);
+        rootRepresentation.mapPut("$$instanceId", upInstanceId);
     }
 
     private void appendCollectionTo(
