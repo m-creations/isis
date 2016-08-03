@@ -18,6 +18,10 @@ package org.apache.isis.viewer.restfulobjects.server.resources;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.adapter.oid.OidMarshaller;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
@@ -98,7 +102,10 @@ public class JsonParserHelper {
         final JsonRepresentation argValueRepr = argRepr.getRepresentation("value");
 
         // value (encodable)
-        if (objectSpec.isEncodeable() || objectSpec.getCorrespondingClass().isAssignableFrom(JsonNode.class)) {
+        if (objectSpec.isEncodeable()
+              || objectSpec.getCorrespondingClass().isAssignableFrom(JsonNode.class)
+              || objectSpec.getCorrespondingClass().isAssignableFrom(HttpServletRequest.class)
+              || objectSpec.getCorrespondingClass().isAssignableFrom(HttpServletResponse.class)) {
             try {
                 return JsonValueEncoder.asAdapter(objectSpec, argValueRepr, null);
             }catch(IllegalArgumentException ex) {

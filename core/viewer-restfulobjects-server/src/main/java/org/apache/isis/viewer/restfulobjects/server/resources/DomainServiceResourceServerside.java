@@ -16,6 +16,7 @@
  */
 package org.apache.isis.viewer.restfulobjects.server.resources;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 
@@ -40,6 +41,8 @@ import org.apache.isis.core.commons.url.UrlEncodingUtils;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.facets.object.domainservice.DomainServiceFacet;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
+import org.apache.isis.core.metamodel.spec.feature.ObjectAction;
+import org.apache.isis.core.metamodel.spec.feature.ObjectActionParameter;
 import org.apache.isis.viewer.restfulobjects.applib.JsonRepresentation;
 import org.apache.isis.viewer.restfulobjects.applib.RepresentationType;
 import org.apache.isis.viewer.restfulobjects.applib.RestfulMediaType;
@@ -248,14 +251,53 @@ public class DomainServiceResourceServerside extends ResourceAbstract implements
     })
     @PrettyPrinting
     public Response invokeAction(@PathParam("serviceId") final String serviceId, @PathParam("actionId") final String actionId, final InputStream body) {
-        init(RepresentationType.ACTION_RESULT, Where.STANDALONE_TABLES, RepresentationService.Intent.NOT_APPLICABLE, body);
-
-        final JsonRepresentation arguments = getResourceContext().getQueryStringAsJsonRepr();
-        
         final ObjectAdapter serviceAdapter = getServiceAdapter(serviceId);
+        final ObjectSpecification serviceSpec = serviceAdapter.getSpecification();
+        final ObjectAction actionSpec = serviceSpec.getObjectAction(actionId);
+
+        JsonRepresentation arguments;
+        // the normal case: no request/response arguments
+        if (null == findParameterByTypeName("javax.servlet.http.HttpServletRequest", actionSpec)
+                        && null == findParameterByTypeName("javax.servlet.http.HttpServletResponse", actionSpec)) {
+                init(RepresentationType.ACTION_RESULT, Where.STANDALONE_TABLES, RepresentationService.Intent.NOT_APPLICABLE,
+                                body);
+                arguments = getResourceContext().getQueryStringAsJsonRepr();
+        } else {
+                // we have a method with either HttpServletRequest, or HttpServletResponse, or both
+                // but no additional arguments (as we then would have to parse the request's InputStream
+                // which would defeat the purpose of passing request/response to the method
+                //
+                // pass an empty body to the init method
+                ByteArrayInputStream dummyBody = new ByteArrayInputStream("{}".getBytes());
+                init(RepresentationType.ACTION_RESULT, Where.STANDALONE_TABLES, RepresentationService.Intent.NOT_APPLICABLE,
+                                dummyBody);
+                arguments = getResourceContext().getQueryStringAsJsonRepr();
+                // and then populate the empty arguments object with request and/or response
+                ObjectActionParameter param = findParameterByTypeName("javax.servlet.http.HttpServletRequest", actionSpec);
+                if(param != null) {
+                        String name = param.getId();
+                        arguments.mapPut(name + ".value", getResourceContext().getHttpServletRequest());
+                }
+                param = findParameterByTypeName("javax.servlet.http.HttpServletResponse", actionSpec);
+                if(param != null) {
+                        String name = param.getId();
+                        arguments.mapPut(name + ".value", getResourceContext().getServletResponse());
+                }
+                // TODO: check if there are additional args and throw an exception if that's the case
+        }
+
         final DomainResourceHelper helper = newDomainResourceHelper(serviceAdapter);
 
         return helper.invokeAction(actionId, arguments);
+    }
+
+    public ObjectActionParameter findParameterByTypeName(String typeName, ObjectAction action) {
+        for (ObjectActionParameter param : action.getParameters()) {
+                if(typeName.equals(param.getSpecification().getFullIdentifier())) {
+                        return param;
+                }
+        }
+        return null;
     }
 
     @Override

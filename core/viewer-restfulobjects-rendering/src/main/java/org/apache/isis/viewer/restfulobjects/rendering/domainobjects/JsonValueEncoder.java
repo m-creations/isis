@@ -24,18 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.NullNode;
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.adapter.mgr.AdapterManager;
 import org.apache.isis.core.metamodel.facets.object.encodeable.EncodableFacet;
@@ -46,6 +37,19 @@ import org.apache.isis.core.runtime.system.context.IsisContext;
 import org.apache.isis.core.runtime.system.persistence.PersistenceSession;
 import org.apache.isis.core.runtime.system.session.IsisSessionFactory;
 import org.apache.isis.viewer.restfulobjects.applib.JsonRepresentation;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  * Similar to Isis' value encoding, but with additional support for JSON
@@ -135,6 +139,78 @@ public final class JsonValueEncoder {
                 return null;
             }
             @Override
+            public Object appendValueAndFormat(ObjectAdapter objectAdapter, String format, JsonRepresentation repr, boolean suppressExtensions) {
+                final Object obj = unwrapAsObjectElseNullNode(objectAdapter);
+                if(obj instanceof String) {
+                    final String str = (String) obj;
+                    repr.mapPut("value", str);
+                } else {
+                    repr.mapPut("value", obj);
+                }
+                appendFormats(repr, this.format, xIsisFormat, suppressExtensions);
+                return obj;
+            }
+        });
+
+        putConverter(new JsonValueConverter(null, "json", JsonNode.class) {
+            @Override
+            public ObjectAdapter asAdapter(JsonRepresentation repr, String format) {
+                return adapterFor(repr.asJsonNode());
+            }
+
+            @Override
+            public Object appendValueAndFormat(ObjectAdapter objectAdapter, String format, JsonRepresentation repr, boolean suppressExtensions) {
+                final Object obj = unwrapAsObjectElseNullNode(objectAdapter);
+                if (obj instanceof String) {
+                    final String str = (String) obj;
+                    repr.mapPut("value", str);
+                } else {
+                    repr.mapPut("value", obj);
+                }
+                appendFormats(repr, this.format, xIsisFormat, suppressExtensions);
+                return obj;
+            }
+        });
+
+        putConverter(new JsonValueConverter(null, "httprequest", HttpServletRequest.class) {
+            @Override
+            public ObjectAdapter asAdapter(JsonRepresentation repr, String format) {
+                JsonNode node = repr.asJsonNode();
+                if(!node.isPojo()) {
+                    // TODO: throw something
+                    return null;
+                }
+                ObjectAdapter adaptor = adapterFor(((com.fasterxml.jackson.databind.node.POJONode) node).getPojo());
+                return adaptor;
+            }
+            @Override
+            // TODO: we will never return a HttpServletRequest, what shall we do here?
+            public Object appendValueAndFormat(ObjectAdapter objectAdapter, String format, JsonRepresentation repr, boolean suppressExtensions) {
+                final Object obj = unwrapAsObjectElseNullNode(objectAdapter);
+                if(obj instanceof String) {
+                    final String str = (String) obj;
+                    repr.mapPut("value", str);
+                } else {
+                    repr.mapPut("value", obj);
+                }
+                appendFormats(repr, this.format, xIsisFormat, suppressExtensions);
+                return obj;
+            }
+        });
+
+        putConverter(new JsonValueConverter(null, "httpresponse", HttpServletResponse.class) {
+            @Override
+            public ObjectAdapter asAdapter(JsonRepresentation repr, String format) {
+                JsonNode node = repr.asJsonNode();
+                if(!node.isPojo()) {
+                    // TODO: throw something
+                    return null;
+                }
+                ObjectAdapter adaptor = adapterFor(((com.fasterxml.jackson.databind.node.POJONode) node).getPojo());
+                return adaptor;
+            }
+            @Override
+            // TODO: we will never return a HttpServletResponse, what shall we do here?
             public Object appendValueAndFormat(ObjectAdapter objectAdapter, String format, JsonRepresentation repr, boolean suppressExtensions) {
                 final Object obj = unwrapAsObjectElseNullNode(objectAdapter);
                 if(obj instanceof String) {
@@ -764,10 +840,11 @@ public final class JsonValueEncoder {
             throw new IllegalArgumentException("Representation must be of a value");
         }
         final EncodableFacet encodableFacet = objectSpec.getFacet(EncodableFacet.class);
-        if (encodableFacet == null) {
-            String reason = "ObjectSpec expected to have an EncodableFacet";
-            throw new IllegalArgumentException(reason);
-        }
+        // TODO: how can I add EncodableFacet to HttpSevletRequest and HttpServletResponse args?
+//        if (encodableFacet == null) {
+//            String reason = "ObjectSpec expected to have an EncodableFacet";
+//            throw new IllegalArgumentException(reason);
+//        }
 
         final ObjectSpecId specId = objectSpec.getSpecId();
         final JsonValueConverter jvc = converterBySpec.get(specId);
