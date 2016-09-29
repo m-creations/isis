@@ -22,6 +22,7 @@ package org.apache.isis.core.commons.configbuilder;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Objects;
@@ -337,7 +338,12 @@ public final class IsisConfigurationBuilder {
      * </p>
      */
     public IsisConfigurationDefault peekConfiguration() {
-        return new IsisConfigurationDefault(resourceStreamSourceChain);
+        IsisConfigurationDefault conf = new IsisConfigurationDefault(resourceStreamSourceChain);
+        Map<String, String> propertyMap = configuration.asMap();
+        for(String name: propertyMap.keySet()) {
+            conf.add(name, propertyMap.get(name));
+        }
+        return conf;
     }
 
     private void ensureNotLocked() {
