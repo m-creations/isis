@@ -4,9 +4,14 @@ This repo contains a fork of Apache Isis with a small number of
 patches which we need for our daily work. We rebase regularly on the
 latest release version and create a release of our own with a suffix
 `-mcN` where `N` is a number starting with `1`,
-e.g. `isis-1.13.0-mc1`.
+e.g. `isis-1.13.0-mc1`. The corresponding tag name will be
+`rel/isis-1.13.0-mc1`.
 
 Apache Isis' master branch can be found in our `upstream` branch.
+
+NOTE: The patches in this branch might be cherry-picked out of order,
+      squashed etc. So be prepared to `git reset --hard origin/master`
+      instead of a `git pull` or `git rebase origin/master`.
 
 == Patch: Allow JsonNode properties to be treated as values
     
@@ -23,6 +28,12 @@ arguments as action parameters and parts of response view models.
 During request processing, one LDAP connection per thread is
 sufficient. The previous implementation could lead to LDAP connection
 churning.
+
+== Fix: Webserver does not respect --port parameter
+
+In Isis 1.13, `WebServer --port 12080` starts on default port 8080.
+
+See http://markmail.org/thread/vrddjiemxws6ikjt
 
 = Upstream repository
 
