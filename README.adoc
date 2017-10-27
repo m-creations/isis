@@ -7,11 +7,18 @@ latest release version and create a release of our own with a suffix
 e.g. `isis-1.13.0-mc1`. The corresponding tag name will be
 `rel/isis-1.13.0-mc1`.
 
-Apache Isis' master branch can be found in our `upstream` branch.
+Apache Isis' master branch can be found in our `upstream` branch, but
+we have deleted the tags which distract from the purpose of this repo
+with:
+
+```
+for t in `git tag` ; do if [[ ! $t =~ ^rel/isis- ]] ;  then git push origin :$t ; fi;  done
+```
 
 NOTE: The patches in this branch might be cherry-picked out of order,
       squashed etc. So be prepared to `git reset --hard origin/master`
       instead of a `git pull` or `git rebase origin/master`.
+
 
 == Patch: Allow JsonNode properties to be treated as values
     
